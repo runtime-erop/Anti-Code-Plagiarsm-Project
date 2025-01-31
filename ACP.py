@@ -7,6 +7,11 @@ def rm_cmt(c):
     c = re.sub(r'#.*', '', c)
     c = re.sub(r'\'\'\'.*?\'\'\'', '', c, flags=re.DOTALL)
     c = re.sub(r'\"\"\".*?\"\"\"', '', c, flags=re.DOTALL)
+    return c.strip()
+
+def remove_bom(c):
+    if c.startswith('\ufeff'):
+        c = c[1:]
     return c
 
 def norm(c):
@@ -22,7 +27,11 @@ def norm(c):
             elif isinstance(n, ast.Constant):
                 n.value = 'C'
         return ast.dump(p)
-    except:
+    except SyntaxError as e:
+        print(f"SyntaxError: {e}")
+        return None
+    except Exception as e:
+        print(f"Unexpected Error: {e}")
         return None
 
 def main():
@@ -37,13 +46,30 @@ def main():
         return
 
     p1, p2 = f
-    with open(p1, 'r') as f1, open(p2, 'r') as f2:
+    with open(p1, 'r', encoding='utf-8-sig') as f1, open(p2, 'r', encoding='utf-8-sig') as f2:
         c1, c2 = f1.read(), f2.read()
 
-    c1, c2 = rm_cmt(c1), rm_cmt(c2)
-    n1, n2 = norm(c1), norm(c2)
+    print("Raw Code 1:", repr(c1))
+    print("Raw Code 2:", repr(c2))
 
-    # Debugging: Print normalized outputs
+    c1, c2 = remove_bom(c1), remove_bom(c2)
+    c1, c2 = rm_cmt(c1), rm_cmt(c2)
+
+    print("Code 1 After Removing Comments:", repr(c1))
+    print("Code 2 After Removing Comments:", repr(c2))
+
+    if not c1.strip():
+        print("INVALID FILE: 1 (Empty after removing comments)")
+        n1 = None
+    else:
+        n1 = norm(c1)
+
+    if not c2.strip():
+        print("INVALID FILE: 2 (Empty after removing comments)")
+        n2 = None
+    else:
+        n2 = norm(c2)
+
     print("Normalized Code 1:", n1)
     print("Normalized Code 2:", n2)
 
